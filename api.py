@@ -50,6 +50,18 @@ SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?effectLabel ?impactLabel  
                                            ?impact <http://covid-19.tib.eu/vocab/impactLabel> ?impactLabel.                                       
 """
 
+
+QUERY_DRUG_TO_DRUGS_INTERACTIONS_PREDICTED ="""
+SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?confidence ?provenance WHERE {  
+                                           ?interaction a <http://covid-19.tib.eu/vocab/DrugDrugPrediction>.
+                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug1CUI> ?effectorDrug.
+                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug2CUI> ?affectdDrug.
+                                           ?effectorDrug <http://covid-19.tib.eu/vocab/drugLabel> ?effectorDrugLabel.
+                                           ?affectdDrug <http://covid-19.tib.eu/vocab/drugLabel> ?affectdDrugLabel.
+                                          ?interaction <http://covid-19.tib.eu/vocab/confidence> ?confidence.
+                                           ?interaction <http://covid-19.tib.eu/vocab/predictionMethod> ?provenance.                                 
+"""
+
 QUERY_DRUGS_TO_DRUGS_INTERACTIONS ="""
 SELECT * {{
 {{SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?effectLabel ?impactLabel  WHERE {{
@@ -71,6 +83,27 @@ SELECT * {{
                                            ?effect <http://covid-19.tib.eu/vocab/effectLabel> ?effectLabel.
                                            ?interaction <http://covid-19.tib.eu/vocab/hasImpact> ?impact.
                                            ?impact <http://covid-19.tib.eu/vocab/impactLabel> ?impactLabel.    
+}}}}}}                                     
+"""
+
+
+QUERY_DRUGS_TO_DRUGS_INTERACTIONS_PREDICTED ="""
+SELECT * {{
+{{SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?confidence ?provenance  WHERE {{
+                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug1CUI> <http://covid-19.tib.eu/vocab/{0}>.
+                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug2CUI> <http://covid-19.tib.eu/vocab/{1}>.
+                                           <http://covid-19.tib.eu/vocab/{0}> <http://covid-19.tib.eu/vocab/drugLabel> ?effectorDrugLabel.
+                                           <http://covid-19.tib.eu/vocab/{1}> <http://covid-19.tib.eu/vocab/drugLabel> ?affectdDrugLabel.
+                                           ?interaction <http://covid-19.tib.eu/vocab/confidence> ?confidence.
+                                           ?interaction <http://covid-19.tib.eu/vocab/predictionMethod> ?provenance.       
+}}}} UNION 
+{{SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?confidence ?provenance  WHERE {{  
+                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug1CUI> <http://covid-19.tib.eu/vocab/{1}>.
+                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug2CUI> <http://covid-19.tib.eu/vocab/{0}>.
+                                           <http://covid-19.tib.eu/vocab/{1}> <http://covid-19.tib.eu/vocab/drugLabel> ?effectorDrugLabel.
+                                           <http://covid-19.tib.eu/vocab/{0}> <http://covid-19.tib.eu/vocab/drugLabel> ?affectdDrugLabel.
+                                           ?interaction <http://covid-19.tib.eu/vocab/confidence> ?confidence.
+                                           ?interaction <http://covid-19.tib.eu/vocab/predictionMethod> ?provenance.    
 }}}}}}                                     
 """
 ############################
@@ -107,11 +140,26 @@ def drug2_interactions_query(drug,limit,page):
     return qresults
 
 
+def drug2_interactions_predicted_query(drug,limit,page):
+    query=QUERY_DRUG_TO_DRUGS_INTERACTIONS_PREDICTED
+    query+="FILTER(?affectdDrug in ("
+    query+="<http://covid-19.tib.eu/vocab/"+drug+">"
+    query+="))}"
+        
+    qresults = execute_query(query,limit,page)
+    return qresults
+
+
 def drugs2_interactions_query(drug_pairs,limit,page):
     query=QUERY_DRUGS_TO_DRUGS_INTERACTIONS.format(drug_pairs[0],drug_pairs[1])        
     qresults = execute_query(query,limit,page)
     return qresults
 
+
+def drugs2_interactions_predicted_query(drug_pairs,limit,page):
+    query=QUERY_DRUGS_TO_DRUGS_INTERACTIONS_PREDICTED.format(drug_pairs[0],drug_pairs[1])        
+    qresults = execute_query(query,limit,page)
+    return qresults
 
 
 def proccesing_response(input_dicc, target,limit,page,sort):
@@ -132,39 +180,70 @@ def proccesing_response(input_dicc, target,limit,page,sort):
    
        ############################Interactions#####################################         
            
-        if elem=='Drug':
-            #drugs_pairs=[(x,y) for x,y in list(itertools.product(lcuis, lcuis)) if x!=y]
-            for drug in lcuis:
-                query_reslut=drug2_interactions_query(drug,limit,page)
-                drugInteractions[drug]=dict()
-                if len(query_reslut)>0:
-                    drugInteractions[drug]["Label"]=query_reslut[0]["affectdDrugLabel"]["value"]
-                    drugInteractions[drug]["DDI"]=[]
-                    for result in query_reslut:
-                        interaction=dict()
-                        interaction["effectorDrug"]=result["effectorDrugLabel"]["value"]
-                        interaction["affectdDrug"]=result["affectdDrugLabel"]["value"]
-                        interaction["effect"]=result["effectLabel"]["value"]
-                        interaction["impact"]=result["impactLabel"]["value"]
-                        drugInteractions[drug]["DDI"].append(interaction)
-        elif elem=="Drugs":
-            drugs_pairs=[(x,y) for x,y in list(itertools.product(lcuis, lcuis)) if x!=y and x<y]
-            for drug_pair in drugs_pairs :
-                query_reslut=drugs2_interactions_query(drug_pair,limit,page)
-                drugInteractions[str(drug_pair)]=dict()
-                if len(query_reslut)>0:
-                    drugInteractions[str(drug_pair)]["Labels"]=query_reslut[0]["affectdDrugLabel"]["value"]+" AND "+query_reslut[0]["effectorDrugLabel"]["value"]
-                    drugInteractions[str(drug_pair)]["DDI"]=[]
-                    for result in query_reslut:
-                        interaction=dict()
-                        interaction["effectorDrug"]=result["effectorDrugLabel"]["value"]
-                        interaction["affectdDrug"]=result["affectdDrugLabel"]["value"]
-                        interaction["effect"]=result["effectLabel"]["value"]
-                        interaction["impact"]=result["impactLabel"]["value"]
-                        drugInteractions[str(drug_pair)]["DDI"].append(interaction)
+        if elem=='Drugs':
+            if target=="DDI":
+                #drugs_pairs=[(x,y) for x,y in list(itertools.product(lcuis, lcuis)) if x!=y]
+                for drug in lcuis:
+                    query_reslut=drug2_interactions_query(drug,limit,page)
+                    drugInteractions[drug]=dict()
+                    if len(query_reslut)>0:
+                        drugInteractions[drug]["Label"]=query_reslut[0]["affectdDrugLabel"]["value"]
+                        drugInteractions[drug]["DDI"]=[]
+                        for result in query_reslut:
+                            interaction=dict()
+                            interaction["effectorDrug"]=result["effectorDrugLabel"]["value"]
+                            interaction["affectdDrug"]=result["affectdDrugLabel"]["value"]
+                            interaction["effect"]=result["effectLabel"]["value"]
+                            interaction["impact"]=result["impactLabel"]["value"]
+                            drugInteractions[drug]["DDI"].append(interaction)
+            elif target=="DDIS":
+                drugs_pairs=[(x,y) for x,y in list(itertools.product(lcuis, lcuis)) if x!=y and x<y]
+                for drug_pair in drugs_pairs :
+                    query_reslut=drugs2_interactions_query(drug_pair,limit,page)
+                    drugInteractions[str(drug_pair)]=dict()
+                    if len(query_reslut)>0:
+                        drugInteractions[str(drug_pair)]["Labels"]=query_reslut[0]["affectdDrugLabel"]["value"]+" AND "+query_reslut[0]["effectorDrugLabel"]["value"]
+                        drugInteractions[str(drug_pair)]["DDIS"]=[]
+                        for result in query_reslut:
+                            interaction=dict()
+                            interaction["effectorDrug"]=result["effectorDrugLabel"]["value"]
+                            interaction["affectdDrug"]=result["affectdDrugLabel"]["value"]
+                            interaction["effect"]=result["effectLabel"]["value"]
+                            interaction["impact"]=result["impactLabel"]["value"]
+                            drugInteractions[str(drug_pair)]["DDIS"].append(interaction)
+            elif target=="DDIP":
+                #drugs_pairs=[(x,y) for x,y in list(itertools.product(lcuis, lcuis)) if x!=y]
+                for drug in lcuis:
+                    query_reslut=drug2_interactions_predicted_query(drug,limit,page)
+                    drugInteractions[drug]=dict()
+                    if len(query_reslut)>0:
+                        drugInteractions[drug]["Label"]=query_reslut[0]["affectdDrugLabel"]["value"]
+                        drugInteractions[drug]["DDIP"]=[]
+                        for result in query_reslut:
+                            interaction=dict()
+                            interaction["effectorDrug"]=result["effectorDrugLabel"]["value"]
+                            interaction["affectdDrug"]=result["affectdDrugLabel"]["value"]
+                            interaction["confidence"]=result["confidence"]["value"]
+                            interaction["provenance"]=result["provenance"]["value"]
+                            drugInteractions[drug]["DDIP"].append(interaction)
+            elif target=="DDIPS":
+                drugs_pairs=[(x,y) for x,y in list(itertools.product(lcuis, lcuis)) if x!=y and x<y]
+                for drug_pair in drugs_pairs :
+                    query_reslut=drugs2_interactions_predicted_query(drug_pair,limit,page)
+                    drugInteractions[str(drug_pair)]=dict()
+                    if len(query_reslut)>0:
+                        drugInteractions[str(drug_pair)]["Labels"]=query_reslut[0]["affectdDrugLabel"]["value"]+" AND "+query_reslut[0]["effectorDrugLabel"]["value"]
+                        drugInteractions[str(drug_pair)]["DDIPS"]=[]
+                        for result in query_reslut:
+                            interaction=dict()
+                            interaction["effectorDrug"]=result["effectorDrugLabel"]["value"]
+                            interaction["affectdDrug"]=result["affectdDrugLabel"]["value"]
+                            interaction["confidence"]=result["confidence"]["value"]
+                            interaction["provenance"]=result["provenance"]["value"]
+                            drugInteractions[str(drug_pair)]["DDIPS"].append(interaction)
 
         
-    results['DDI']=drugInteractions
+    results['Interactions']=drugInteractions
     return results
            
 
@@ -200,7 +279,7 @@ def run_exploration_api():
         logger.info("Error in the input format")
         r = "{results: 'Error in the input format'}"
     else:
-        if target=="DDI":
+        if target!="Pub":
             response = proccesing_response(input_list,target,limit,page,sort)       
         elif target=="Pub":
             response=get_publication.process(input_list,KG)
