@@ -11,6 +11,7 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 import logging
 import os
 import itertools
+import get_publication
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -199,8 +200,11 @@ def run_exploration_api():
         logger.info("Error in the input format")
         r = "{results: 'Error in the input format'}"
     else:
-        response = proccesing_response(input_list,target,limit,page,sort)
-        r = json.dumps(response, indent=4)            
+        if target=="DDI":
+            response = proccesing_response(input_list,target,limit,page,sort)       
+        elif target=="Pub":
+            response=get_publication.process(input_list,KG)
+    r = json.dumps(response, indent=4)  
     logger.info("Sending the results: ")
     response = make_response(r, 200)
     response.mimetype = "application/json"
