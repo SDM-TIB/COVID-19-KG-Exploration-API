@@ -11,6 +11,7 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 import logging
 import os
 import itertools
+from flask_cors import CORS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -27,7 +28,7 @@ KG="https://f0ffbb86.ngrok.io/sparql"
 EMPTY_JSON = "{}"
 
 app = Flask(__name__)
-
+CORS(app)
 ############################
 #
 # Query constants
@@ -210,7 +211,7 @@ def main(*args):
     if len(args) == 1:
         myhost = args[0]
     else:
-        myhost = "0.0.0.0"
+        myhost = "127.0.0.1"
     app.run(debug=False, host=myhost)
     
 if __name__ == '__main__':
