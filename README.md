@@ -1,24 +1,21 @@
 # COVID-19-KG-Exploration-API
 
-
-
-# 1) Get Interactions of a Drug
+# 1) Get Publication related to Drugs
 
 ```
 curl --header "Content-Type: application/json" \
   --request POST \
   --data '{
-   "Drug":[
+   "Drugs":[
   	"C0000970",
   	"C0028978",
   	"C0009214"
    ]
 }' \
-  http://localhost:5000/exploration?target=DDI&limit=10&page=0
+  http://localhost:5000/exploration?target=Pub
 ```
 
-# 2) Get all the interaction among the provided Drugs
-
+# 2) Get Interactions of a Drug
 
 ```
 curl --header "Content-Type: application/json" \
@@ -31,4 +28,52 @@ curl --header "Content-Type: application/json" \
    ]
 }' \
   http://localhost:5000/exploration?target=DDI&limit=10&page=0
+```
+
+# 3) Get all the interaction among the provided Drugs
+
+
+```
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+   "Drugs":[
+  	"C0000970",
+  	"C0028978",
+  	"C0009214"
+   ]
+}' \
+  http://localhost:5000/exploration?target=DDIS&limit=10&page=0
+```
+
+# 4) Get the predicted interactions of a Drug
+
+
+```
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+   "Drugs":[
+  	"C0000970",
+  	"C0028978",
+  	"C0009214"
+   ]
+}' \
+  http://localhost:5000/exploration?target=DDIP&limit=10&page=0
+```
+
+# 4) Get all the predicted interaction among the provided Drugs
+
+
+```
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+   "Drugs":[
+  	"C0000970",
+  	"C0028978",
+  	"C0009214"
+   ]
+}' \
+  http://localhost:5000/exploration?target=DDIPS&limit=10&page=0
 ```
