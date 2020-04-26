@@ -62,7 +62,7 @@ curl --header "Content-Type: application/json" \
   http://localhost:5000/exploration?target=DDIP&limit=10&page=0
 ```
 
-# 4) Get all the predicted interaction among the provided Drugs
+# 5) Get all the predicted interaction among the provided Drugs
 
 
 ```
