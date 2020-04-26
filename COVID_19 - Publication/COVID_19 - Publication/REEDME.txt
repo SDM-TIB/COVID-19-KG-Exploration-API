@@ -1,4 +1,0 @@
-1. get_publication.py 
-	input: data_01.json
-	output: publication.json
-	run: python get_publication.py data_01.json
