@@ -12,7 +12,7 @@ curl --header "Content-Type: application/json" \
   	"C0030106"
    ]
 }' \
-  http://localhost:5000/exploration?target=Pub
+  https://labs.tib.eu/sdm/covid19kg-exp/covid19kg-exp?target=Pub
 ```
 
 # 2) Get Interactions of a Drug
@@ -27,7 +27,7 @@ curl --header "Content-Type: application/json" \
   	"C0009214"
    ]
 }' \
-  http://localhost:5000/exploration?target=DDI&limit=10&page=0
+  https://labs.tib.eu/sdm/covid19kg-exp/covid19kg-exp?target=DDI&limit=10&page=0
 ```
 
 # 3) Get all the interaction among the provided Drugs
@@ -43,7 +43,7 @@ curl --header "Content-Type: application/json" \
   	"C0009214"
    ]
 }' \
-  http://localhost:5000/exploration?target=DDIS&limit=10&page=0
+  https://labs.tib.eu/sdm/covid19kg-exp/covid19kg-exp?target=DDIS&limit=10&page=0
 ```
 
 # 4) Get the predicted interactions of a Drug
@@ -59,7 +59,7 @@ curl --header "Content-Type: application/json" \
   	"C0009214"
    ]
 }' \
-  http://localhost:5000/exploration?target=DDIP&limit=10&page=0
+  https://labs.tib.eu/sdm/covid19kg-exp/covid19kg-exp?target=DDIP&limit=10&page=0
 ```
 
 # 5) Get all the predicted interaction among the provided Drugs
@@ -75,5 +75,5 @@ curl --header "Content-Type: application/json" \
   	"C0009214"
    ]
 }' \
-  http://localhost:5000/exploration?target=DDIPS&limit=10&page=0
+  https://labs.tib.eu/sdm/covid19kg-exp/covid19kg-exp?target=DDIPS&limit=10&page=0
 ```
