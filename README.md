@@ -7,9 +7,9 @@ curl --header "Content-Type: application/json" \
   --request POST \
   --data '{
    "Drugs":[
-  	"C0000970",
-  	"C0028978",
-  	"C0009214"
+  	"C0031623",
+  	"C0751995",
+  	"C0030106"
    ]
 }' \
   http://localhost:5000/exploration?target=Pub
