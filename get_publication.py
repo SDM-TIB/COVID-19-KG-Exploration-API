@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import sys
-from SPARQLWrapper import SPARQLWrapper, JSON
-import json
 
+from SPARQLWrapper import SPARQLWrapper, JSON
 
 def load_drug_cui(data):
-    input_cui = data['drugs']
-    input_cui_uri = ','.join(['<http://covid-19.tib.eu/vocab/'+cui+'>' for cui in input_cui])
+    input_cui = data['Drugs']
+    input_cui_uri = ','.join(['<http://covid-19.tib.eu/Annotation/'+cui+'>' for cui in input_cui])
     return input_cui_uri
 
 
@@ -16,19 +14,19 @@ def get_publication(input_cui_uri, sparql):
     query = """
     select distinct ?pub ?year ?journal ?title ?url ?drug ?drugLabel where {
         ?drug a <http://covid-19.tib.eu/vocab/Drug>.
-        ?ann a <http://covid-19.tib.eu/vocab/Annotation>.
-        ?ann <http://covid-19.tib.eu/vocab/hasAnnotation> ?drug.
-        ?drug <http://covid-19.tib.eu/vocab/externalLink> ?drugID.
+        ?drug <http://covid-19.tib.eu/vocab/hasCUIAnnotation> ?drugCUI.
+        Filter(?drugCUI in (""" + input_cui_uri + """))
         ?drug <http://covid-19.tib.eu/vocab/drugLabel> ?drugLabel.
+        ?ann a <http://covid-19.tib.eu/vocab/ConceptAnnotation>.
+        ?ann <http://covid-19.tib.eu/vocab/hasSemanticAnnotation> ?semAnn.
+        ?semAnn <http://covid-19.tib.eu/vocab/hasCUIAnnotation> ?drugCUI.
         ?ann <http://covid-19.tib.eu/vocab/annotates> ?pub.
-        ?ann_cov a <http://covid-19.tib.eu/vocab/COVID_Annotation>.
-        ?ann_cov <http://covid-19.tib.eu/vocab/annotates> ?pub.
         ?pub <http://covid-19.tib.eu/vocab/title> ?title.
         ?pub <http://covid-19.tib.eu/vocab/year> ?year.
         ?pub <http://covid-19.tib.eu/vocab/journal> ?journal.
-        ?pub <http://covid-19.tib.eu/vocab/url> ?url.
+        ?pub <http://covid-19.tib.eu/vocab/externalLink> ?url.
 
-        Filter(?drug in (""" + input_cui_uri + """))
+       
     }
     """
     sparql.setQuery(query)
@@ -65,8 +63,6 @@ def get_publication(input_cui_uri, sparql):
     return dictionary
 
 def process(input_dicc,endpoint):
-    #endpoint = "https://f0ffbb86.ngrok.io/sparql"
     sparql = SPARQLWrapper(endpoint)
-
     input_cui_uri = load_drug_cui(input_dicc)
     return get_publication(input_cui_uri, sparql)

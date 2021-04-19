@@ -11,7 +11,6 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 import logging
 import os
 import itertools
-from flask_cors import CORS
 import get_publication
 
 logger = logging.getLogger(__name__)
@@ -19,17 +18,12 @@ logger.setLevel(logging.INFO)
 
 
 
-KG="https://f0ffbb86.ngrok.io/sparql"
-#KG = os.environ["IASISKG_ENDPOINT"]
-#all
-#KG="http://node2.research.tib.eu:18873/sparql"
-#KG="http://node2.research.tib.eu:11789/sparql"
-#drug_pub
-#KG="http://node2.research.tib.eu:11124/sparql"
+
+KG = os.environ["ENDPOINT"]
 EMPTY_JSON = "{}"
 
 app = Flask(__name__)
-CORS(app)
+
 ############################
 #
 # Query constants
@@ -40,50 +34,62 @@ CORS(app)
 
 
 QUERY_DRUG_TO_DRUGS_INTERACTIONS ="""
-SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?effectLabel ?impactLabel  WHERE {  
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug1CUI> ?effectorDrug.
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug2CUI> ?affectdDrug.
+SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?effect AS ?effectLabel  ?impactLabel   WHERE {  
+                                           ?interaction <http://covid-19.tib.eu/vocab/precipitant_hasDrugBankID> ?effectorDrug.
+                                           ?interaction <http://covid-19.tib.eu/vocab/object_hasDrugBankID> ?affectdDrug.
+                                           ?affectdDrug <http://covid-19.tib.eu/vocab/hasCUIAnnotation> ?affectdDrugCUI.
                                            ?effectorDrug <http://covid-19.tib.eu/vocab/drugLabel> ?effectorDrugLabel.
                                            ?affectdDrug <http://covid-19.tib.eu/vocab/drugLabel> ?affectdDrugLabel.
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasEffect> ?effect.
-                                           ?effect <http://covid-19.tib.eu/vocab/effectLabel> ?effectLabel.
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasImpact> ?impact.
-                                           ?impact <http://covid-19.tib.eu/vocab/impactLabel> ?impactLabel.                                       
+                                            ?interaction <http://covid-19.tib.eu/vocab/effect> ?effectCUI.
+                                            ?effect <http://covid-19.tib.eu/vocab/hasCUIAnnotation>  ?effectCUI.
+                                            ?effect a  <http://covid-19.tib.eu/vocab/AdverseEvent>.
+                                           ?interaction <http://covid-19.tib.eu/vocab/impact> ?impactLabel.                                   
 """
 
 
 QUERY_DRUG_TO_DRUGS_INTERACTIONS_PREDICTED ="""
 SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?confidence ?provenance WHERE {  
                                            ?interaction a <http://covid-19.tib.eu/vocab/DrugDrugPrediction>.
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug1CUI> ?effectorDrug.
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug2CUI> ?affectdDrug.
+                                           ?interaction <http://covid-19.tib.eu/vocab/interactor1> ?effectorDrug.
+                                           ?interaction <http://covid-19.tib.eu/vocab/interactor2> ?affectdDrug.
+                                           ?affectdDrug <http://covid-19.tib.eu/vocab/hasCUIAnnotation> ?affectdDrugCUI.
                                            ?effectorDrug <http://covid-19.tib.eu/vocab/drugLabel> ?effectorDrugLabel.
                                            ?affectdDrug <http://covid-19.tib.eu/vocab/drugLabel> ?affectdDrugLabel.
                                           ?interaction <http://covid-19.tib.eu/vocab/confidence> ?confidence.
-                                           ?interaction <http://covid-19.tib.eu/vocab/predictionMethod> ?provenance.                                 
+                                           ?interaction <http://covid-19.tib.eu/vocab/predictionMethod> ?provenance.                                
 """
 
 QUERY_DRUGS_TO_DRUGS_INTERACTIONS ="""
 SELECT * {{
-{{SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?effectLabel ?impactLabel  WHERE {{
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug1CUI> <http://covid-19.tib.eu/vocab/{0}>.
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug2CUI> <http://covid-19.tib.eu/vocab/{1}>.
-                                           <http://covid-19.tib.eu/vocab/{0}> <http://covid-19.tib.eu/vocab/drugLabel> ?effectorDrugLabel.
-                                           <http://covid-19.tib.eu/vocab/{1}> <http://covid-19.tib.eu/vocab/drugLabel> ?affectdDrugLabel.
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasEffect> ?effect.
-                                           ?effect <http://covid-19.tib.eu/vocab/effectLabel> ?effectLabel.
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasImpact> ?impact.
-                                           ?impact <http://covid-19.tib.eu/vocab/impactLabel> ?impactLabel.       
+{{SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?effect AS ?effectLabel ?impactLabel  WHERE {{
+                                           ?interaction <http://covid-19.tib.eu/vocab/precipitantDrug> <http://covid-19.tib.eu/Annotation/{0}>.
+                                           ?interaction <http://covid-19.tib.eu/vocab/objectDrug> <http://covid-19.tib.eu/Annotation/{1}>.
+                                           
+                                           ?interaction <http://covid-19.tib.eu/vocab/precipitant_hasDrugBankID> ?effectorDrug.
+                                           ?interaction <http://covid-19.tib.eu/vocab/object_hasDrugBankID> ?affectedDrug.
+                                           
+                                           
+                                           ?effectorDrug <http://covid-19.tib.eu/vocab/drugLabel> ?effectorDrugLabel.
+                                           ?affectedDrug <http://covid-19.tib.eu/vocab/drugLabel> ?affectdDrugLabel.
+                                           
+                                           ?interaction <http://covid-19.tib.eu/vocab/effect> ?effectCUI.
+                                           ?effect <http://covid-19.tib.eu/vocab/hasCUIAnnotation> ?effectCUI.
+                                           ?effect a  <http://covid-19.tib.eu/vocab/AdverseEvent>.
+                                           ?interaction <http://covid-19.tib.eu/vocab/impact> ?impactLabel.     
 }}}} UNION 
-{{SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?effectLabel ?impactLabel  WHERE {{  
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug1CUI> <http://covid-19.tib.eu/vocab/{1}>.
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug2CUI> <http://covid-19.tib.eu/vocab/{0}>.
-                                           <http://covid-19.tib.eu/vocab/{1}> <http://covid-19.tib.eu/vocab/drugLabel> ?effectorDrugLabel.
-                                           <http://covid-19.tib.eu/vocab/{0}> <http://covid-19.tib.eu/vocab/drugLabel> ?affectdDrugLabel.
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasEffect> ?effect.
-                                           ?effect <http://covid-19.tib.eu/vocab/effectLabel> ?effectLabel.
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasImpact> ?impact.
-                                           ?impact <http://covid-19.tib.eu/vocab/impactLabel> ?impactLabel.    
+{{SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?effect AS ?effectLabel ?impactLabel  WHERE {{  
+                                           ?interaction <http://covid-19.tib.eu/vocab/precipitantDrug> <http://covid-19.tib.eu/Annotation/{1}>.
+                                           ?interaction <http://covid-19.tib.eu/vocab/objectDrug> <http://covid-19.tib.eu/Annotation/{0}>.
+                                           
+                                           ?interaction <http://covid-19.tib.eu/vocab/precipitant_hasDrugBankID> ?effectorDrug.
+                                           ?interaction <http://covid-19.tib.eu/vocab/object_hasDrugBankID> ?affectedDrug.
+                                           
+                                          ?effectorDrug <http://covid-19.tib.eu/vocab/drugLabel> ?effectorDrugLabel.
+                                           ?affectedDrug <http://covid-19.tib.eu/vocab/drugLabel> ?affectdDrugLabel.
+                                           ?interaction <http://covid-19.tib.eu/vocab/effect> ?effectCUI.
+                                           ?effect <http://covid-19.tib.eu/vocab/hasCUIAnnotation> ?effectCUI.
+                                           ?effect a  <http://covid-19.tib.eu/vocab/AdverseEvent>.
+                                           ?interaction <http://covid-19.tib.eu/vocab/impact> ?impactLabel.
 }}}}}}                                     
 """
 
@@ -91,18 +97,22 @@ SELECT * {{
 QUERY_DRUGS_TO_DRUGS_INTERACTIONS_PREDICTED ="""
 SELECT * {{
 {{SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?confidence ?provenance  WHERE {{
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug1CUI> <http://covid-19.tib.eu/vocab/{0}>.
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug2CUI> <http://covid-19.tib.eu/vocab/{1}>.
-                                           <http://covid-19.tib.eu/vocab/{0}> <http://covid-19.tib.eu/vocab/drugLabel> ?effectorDrugLabel.
-                                           <http://covid-19.tib.eu/vocab/{1}> <http://covid-19.tib.eu/vocab/drugLabel> ?affectdDrugLabel.
+                                           ?interaction <http://covid-19.tib.eu/vocab/interactor1> ?effectorDrug.
+                                           ?interaction <http://covid-19.tib.eu/vocab/interactor2> ?affectedDrug.
+                                           ?effectorDrug <http://covid-19.tib.eu/vocab/hasCUIAnnotation> <http://covid-19.tib.eu/Annotation/{0}>.
+                                           ?affectedDrug <http://covid-19.tib.eu/vocab/hasCUIAnnotation> <http://covid-19.tib.eu/Annotation/{1}>.
+                                           ?effectorDrug <http://covid-19.tib.eu/vocab/drugLabel> ?effectorDrugLabel.
+                                           ?affectedDrug <http://covid-19.tib.eu/vocab/drugLabel> ?affectdDrugLabel.
                                            ?interaction <http://covid-19.tib.eu/vocab/confidence> ?confidence.
                                            ?interaction <http://covid-19.tib.eu/vocab/predictionMethod> ?provenance.       
 }}}} UNION 
 {{SELECT DISTINCT ?effectorDrugLabel ?affectdDrugLabel ?confidence ?provenance  WHERE {{  
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug1CUI> <http://covid-19.tib.eu/vocab/{1}>.
-                                           ?interaction <http://covid-19.tib.eu/vocab/hasDrug2CUI> <http://covid-19.tib.eu/vocab/{0}>.
-                                           <http://covid-19.tib.eu/vocab/{1}> <http://covid-19.tib.eu/vocab/drugLabel> ?effectorDrugLabel.
-                                           <http://covid-19.tib.eu/vocab/{0}> <http://covid-19.tib.eu/vocab/drugLabel> ?affectdDrugLabel.
+                                           ?interaction <http://covid-19.tib.eu/vocab/interactor1> ?effectorDrug.
+                                           ?interaction <http://covid-19.tib.eu/vocab/interactor2> ?affectedDrug.
+                                            ?effectorDrug <http://covid-19.tib.eu/vocab/hasCUIAnnotation> <http://covid-19.tib.eu/Annotation/{1}>.
+                                           ?affectedDrug <http://covid-19.tib.eu/vocab/hasCUIAnnotation> <http://covid-19.tib.eu/Annotation/{0}>.
+                                           ?effectorDrug <http://covid-19.tib.eu/vocab/drugLabel> ?effectorDrugLabel.
+                                           ?affectedDrug <http://covid-19.tib.eu/vocab/drugLabel> ?affectdDrugLabel.
                                            ?interaction <http://covid-19.tib.eu/vocab/confidence> ?confidence.
                                            ?interaction <http://covid-19.tib.eu/vocab/predictionMethod> ?provenance.    
 }}}}}}                                     
@@ -133,8 +143,8 @@ def execute_query(query,limit,page):
 
 def drug2_interactions_query(drug,limit,page):
     query=QUERY_DRUG_TO_DRUGS_INTERACTIONS
-    query+="FILTER(?affectdDrug in ("
-    query+="<http://covid-19.tib.eu/vocab/"+drug+">"
+    query+="FILTER(?affectdDrugCUI in ("
+    query+="<http://covid-19.tib.eu/Annotation/"+drug+">"
     query+="))}"
         
     qresults = execute_query(query,limit,page)
@@ -143,8 +153,8 @@ def drug2_interactions_query(drug,limit,page):
 
 def drug2_interactions_predicted_query(drug,limit,page):
     query=QUERY_DRUG_TO_DRUGS_INTERACTIONS_PREDICTED
-    query+="FILTER(?affectdDrug in ("
-    query+="<http://covid-19.tib.eu/vocab/"+drug+">"
+    query+="FILTER(?affectdDrugCUI in ("
+    query+="<http://covid-19.tib.eu/Annotation/"+drug+">"
     query+="))}"
         
     qresults = execute_query(query,limit,page)
@@ -183,7 +193,6 @@ def proccesing_response(input_dicc, target,limit,page,sort):
            
         if elem=='Drugs':
             if target=="DDI":
-                #drugs_pairs=[(x,y) for x,y in list(itertools.product(lcuis, lcuis)) if x!=y]
                 for drug in lcuis:
                     query_reslut=drug2_interactions_query(drug,limit,page)
                     drugInteractions[drug]=dict()
@@ -194,7 +203,7 @@ def proccesing_response(input_dicc, target,limit,page,sort):
                             interaction=dict()
                             interaction["effectorDrug"]=result["effectorDrugLabel"]["value"]
                             interaction["affectdDrug"]=result["affectdDrugLabel"]["value"]
-                            interaction["effect"]=result["effectLabel"]["value"]
+                            interaction["effect"]=result["effectLabel"]["value"].replace('http://covid-19.tib.eu/AdverseEvent/','').split('_')[0]
                             interaction["impact"]=result["impactLabel"]["value"]
                             drugInteractions[drug]["DDI"].append(interaction)
             elif target=="DDIS":
@@ -209,9 +218,10 @@ def proccesing_response(input_dicc, target,limit,page,sort):
                             interaction=dict()
                             interaction["effectorDrug"]=result["effectorDrugLabel"]["value"]
                             interaction["affectdDrug"]=result["affectdDrugLabel"]["value"]
-                            interaction["effect"]=result["effectLabel"]["value"]
+                            interaction["effect"]=result["effectLabel"]["value"].replace('http://covid-19.tib.eu/AdverseEvent/','').split('_')[0]
                             interaction["impact"]=result["impactLabel"]["value"]
-                            drugInteractions[str(drug_pair)]["DDIS"].append(interaction)
+                            if interaction not in drugInteractions[str(drug_pair)]["DDIS"]:
+                                drugInteractions[str(drug_pair)]["DDIS"].append(interaction)
             elif target=="DDIP":
                 #drugs_pairs=[(x,y) for x,y in list(itertools.product(lcuis, lcuis)) if x!=y]
                 for drug in lcuis:
@@ -253,7 +263,7 @@ def proccesing_response(input_dicc, target,limit,page,sort):
 
 
 
-@app.route('/exploration', methods=['POST'])
+@app.route('/covid19kg-exp', methods=['POST'])
 def run_exploration_api():
     if (not request.json):
         abort(400)
@@ -294,7 +304,7 @@ def main(*args):
     if len(args) == 1:
         myhost = args[0]
     else:
-        myhost = "127.0.0.1"
+        myhost = "0.0.0.0"
     app.run(debug=False, host=myhost)
     
 if __name__ == '__main__':
